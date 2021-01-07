@@ -32,7 +32,7 @@ create index groupmembers_users_email_fk
 	on groupmembers (email)
 ;
 
-create table groups
+create table groups1
 (
 	groupId int auto_increment
 		primary key,
@@ -43,12 +43,12 @@ create table groups
 ;
 
 create index groups_users_email_fk
-	on groups (owner)
+	on groups1 (owner)
 ;
 
 alter table groupmembers
 	add constraint groupmembers_groups_groupId_fk
-		foreign key (groupId) references groups (groupId)
+		foreign key (groupId) references groups1 (groupId)
 ;
 
 create table members
@@ -115,7 +115,7 @@ alter table groupmembers
 		foreign key (email) references users (email)
 ;
 
-alter table groups
+alter table groups1
 	add constraint groups_users_email_fk
 		foreign key (owner) references users (email)
 ;

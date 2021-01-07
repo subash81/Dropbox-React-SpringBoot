@@ -7,6 +7,16 @@ import com.cmpe273.dropbox.backend.service.FileService;
 import com.cmpe273.dropbox.backend.service.UserFilesService;
 import com.cmpe273.dropbox.backend.service.UserLogService;
 import com.cmpe273.dropbox.backend.service.UserService;
+import com.google.auth.Credentials;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Acl;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Bucket;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.Acl.Role;
+import com.google.cloud.storage.Acl.User;
 import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,11 +32,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -60,10 +73,68 @@ public class FileController {
         System.out.println("subashkumarsaladi controller ****");
 
         com.cmpe273.dropbox.backend.entity.Files newFile = new com.cmpe273.dropbox.backend.entity.Files();
+         
+	    // SQL server changes start
+		/*
+		 * try {
+		 * 
+		 * String filepath = ""; if(!StringUtils.isEmpty(fileparent)){
+		 * 
+		 * filepath = fileparent+"/" + multipartFile.getOriginalFilename();
+		 * 
+		 * } else{
+		 * 
+		 * filepath = UPLOADED_FOLDER + email.split("\\.")[0] + "/" +
+		 * multipartFile.getOriginalFilename();
+		 * 
+		 * }
+		 * 
+		 * byte[] bytes = multipartFile.getBytes(); Path path = Paths.get(filepath);
+		 * Files.write(path, bytes);
+		 * 
+		 * 
+		 * newFile.setFilename(multipartFile.getOriginalFilename());
+		 * newFile.setFileparent(fileparent); newFile.setIsfile("T");
+		 * newFile.setOwner(email); newFile.setSharedcount(0); newFile.setStarred("F");
+		 * newFile.setFilepath(filepath);
+		 * 
+		 * fileService.uploadFile(newFile);
+		 * 
+		 * Userfiles userfiles = new Userfiles();
+		 * 
+		 * userfiles.setEmail(email); userfiles.setFilepath(filepath);
+		 * 
+		 * userFilesService.addUserFile(userfiles);
+		 * 
+		 * Userlog userlog = new Userlog();
+		 * 
+		 * userlog.setAction("File Upload"); userlog.setEmail(email);
+		 * userlog.setFilename(multipartFile.getOriginalFilename());
+		 * userlog.setFilepath(filepath); userlog.setIsfile("F");
+		 * userlog.setActiontime(new Date().toString());
+		 * 
+		 * userLogService.addUserLog(userlog);
+		 * 
+		 * 
+		 * } catch (IOException e) { e.printStackTrace();
+		 * 
+		 * return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
+		 * 
+		 * }
+		 */
+	    // SQL server changes end
+	    
+        // GCS start
+        //final Part filePart = request.getPart("myFile");
+  		//String fileName = getFileName(filePart);
+  	    // The ID of your GCP project
+	    String projectId = "arboreal-height-273317";
 
-        try {
-
-            String filepath = "";
+	    // The ID of your GCS bucket
+	    String bucketName = "project-sam";
+	    
+        try {      	 
+        	String filepath = "";
             if(!StringUtils.isEmpty(fileparent)){
 
                 filepath = fileparent+"/" + multipartFile.getOriginalFilename();
@@ -75,6 +146,7 @@ public class FileController {
 
             }
 
+            
             byte[] bytes = multipartFile.getBytes();
             Path path = Paths.get(filepath);
             Files.write(path, bytes);
@@ -87,35 +159,48 @@ public class FileController {
             newFile.setSharedcount(0);
             newFile.setStarred("F");
             newFile.setFilepath(filepath);
+    		 InputStream fileInputStreams = multipartFile.getInputStream();
+  		    
+             //FileInputStream fileInputStream = new FileInputStream("/Users/satyasameeradevu/eclipse-workspace/IB-PRE/target/IB-PRE-0.0.1-SNAPSHOT/uploads/keerthi.txt");
 
-            fileService.uploadFile(newFile);
+             Credentials credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/subashkumarsaladi/Desktop/arboreal-height-273317-57289372ded5.json"));
+             Storage storage = StorageOptions.newBuilder().setProjectId(projectId).setCredentials(credentials).build().getService();
+            
+             BlobInfo blobInfo =
+                 storage.create(
+                     BlobInfo
+                         .newBuilder(bucketName, filepath)
+                         .setAcl(new ArrayList<>(Arrays.asList(Acl.of(User.ofAllUsers(), Role.OWNER))))
+                         .build(),
+                         fileInputStreams);
 
-            Userfiles userfiles = new Userfiles();
-
-            userfiles.setEmail(email);
-            userfiles.setFilepath(filepath);
-
-            userFilesService.addUserFile(userfiles);
-
-            Userlog userlog = new Userlog();
-
-            userlog.setAction("File Upload");
-            userlog.setEmail(email);
-            userlog.setFilename(multipartFile.getOriginalFilename());
-            userlog.setFilepath(filepath);
-            userlog.setIsfile("F");
-            userlog.setActiontime(new Date().toString());
-
-            userLogService.addUserLog(userlog);
-
-
-        } catch (IOException e) {
+             String fileUrl = blobInfo.getMediaLink();
+             System.out.println("Download file  " + fileUrl);
+             //listObjects(projectId,bucketName);
+            
+            //response.getOutputStream().println("<p>Thanks for uploading! Here are the list of files you uploaded in Google Cloud Server:</p>");
+ 			//response.getOutputStream().println("<p>Download here : </p><a href=\"" + fileUrl + "\">"+fileName+"</a>");
+ 				
+ 		
+ 			 //Bucket bucket = storage.get(bucketName);
+             //Page<Blob> blobs = bucket.list();
+             //response.getOutputStream().println("<table><td>");
+//             for (Blob blob : blobs.iterateAll()) {
+//               System.out.println(blob.getName()+blob.getMediaLink());
+//               response.getOutputStream().println("<p><a href=\"" + blob.getMediaLink() + "\">"+blob.getName()+"</a></p>");
+//               System.out.println(blob.getName());
+//             }
+             //response.getOutputStream().println("</td></table>");
+             //response.getOutputStream().println("<p>Upload another file <a href=\"http://localhost:8080/IB-PRE\">here</a>.</p>");
+         } catch (IOException e) {
+           // e.printStackTrace();
             e.printStackTrace();
-
+            System.out.println("exception in servlet processing ");
+            //response.getOutputStream().println("<p>Sorry, Your upload to Google Cloud Server failed. Please try again !!</p>");
                 return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
 
         }
-
+     // GCS end
 
         return new ResponseEntity<com.cmpe273.dropbox.backend.entity.Files>(newFile, HttpStatus.OK);
     }
@@ -161,9 +246,9 @@ public class FileController {
         }
 
         String filepath = UPLOADED_FOLDER + file.getOwner().split("\\.")[0] + "/" + file.getFilename();
-
+        System.out.println("file controller  delete method filepath **** "+filepath);
         Path path = Paths.get(filepath);
-
+        System.out.println("file controller  delete method path **** "+path);
 
         if (file.getOwner().equals(email)) {
 
