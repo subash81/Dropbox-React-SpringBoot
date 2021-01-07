@@ -47,7 +47,9 @@ public class FileController {
     private UserService userService;
 
     //Save the uploaded file to this folder
-    private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"./public/uploads/";
+    //private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"./public/uploads/";
+    
+    private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"/Users/subashkumarsaladi/Desktop/testing_dropbox/";
 
 
     @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
@@ -55,6 +57,7 @@ public class FileController {
                                                                                @RequestParam("fileparent") String fileparent, HttpSession session) throws JSONException {
 
         String email = (String) session.getAttribute("email");
+        System.out.println("subashkumarsaladi controller ****");
 
         com.cmpe273.dropbox.backend.entity.Files newFile = new com.cmpe273.dropbox.backend.entity.Files();
 
@@ -268,7 +271,7 @@ public class FileController {
             return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
         }
 
-        String folderpath = "./public/uploads/" + email.split("\\.")[0]+"/"+folderName;
+        String folderpath = UPLOADED_FOLDER + email.split("\\.")[0]+"/"+folderName;
 
         com.cmpe273.dropbox.backend.entity.Files file= new com.cmpe273.dropbox.backend.entity.Files();
 
