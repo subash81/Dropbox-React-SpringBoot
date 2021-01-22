@@ -370,7 +370,7 @@ console.log(filedata)
                         <div className="col-sm-7 ">
                             <a href="#" className="link-title "
                                onClick={() => this.navigateHome()}>
-                                Dropbox
+                                CloudLock
                             </a>
                         </div>
                     </div>

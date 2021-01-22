@@ -60,9 +60,9 @@ public class FileController {
     private UserService userService;
 
     //Save the uploaded file to this folder
-    //private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"./public/uploads/";
+    private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"./public/uploads/";
     
-    private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"/Users/subashkumarsaladi/Desktop/testing_dropbox/";
+    //private static String UPLOADED_FOLDER = /*System.getProperty("user.dir") + */"/Users/subashkumarsaladi/Desktop/testing_dropbox/";
 
 
     @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
@@ -175,6 +175,7 @@ public class FileController {
                          fileInputStreams);
 
              String fileUrl = blobInfo.getMediaLink();
+             newFile.setFilepath(fileUrl);
              System.out.println("Download file  " + fileUrl);
              //listObjects(projectId,bucketName);
             
@@ -235,6 +236,7 @@ public class FileController {
         return new ResponseEntity(filesList, HttpStatus.OK);
     }
 
+    /** SQL server start
     @PostMapping(path = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> deleteFile(@RequestBody com.cmpe273.dropbox.backend.entity.Files file, HttpSession session) throws JSONException {
         System.out.println(file.getFilepath());
@@ -274,6 +276,80 @@ public class FileController {
                 userlog.setActiontime(new Date().toString());
                 userlog.setIsfile(file.getIsfile());
                 userLogService.addUserLog(userlog);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+
+                    return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
+
+            }
+        } else {
+
+            userFilesService.deleteUserFilesByEmailAndFilepath(file.getFilepath(), email);
+            fileService.updateSharedCount(file.getFilepath(), file.getSharedcount() - 1);
+
+        }
+
+        return new ResponseEntity(null, HttpStatus.OK);
+
+    }SQL server end **/
+    
+    @PostMapping(path = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> deleteFile(@RequestBody com.cmpe273.dropbox.backend.entity.Files file, HttpSession session) throws JSONException {
+        System.out.println(file.getFilepath());
+
+        String email = (String) session.getAttribute("email");
+
+        if(email==null){
+            return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
+        }
+
+        String filepath = UPLOADED_FOLDER + file.getOwner().split("\\.")[0] + "/" + file.getFilename();
+        System.out.println("file controller  delete method filepath **** "+filepath);
+        Path path = Paths.get(filepath);
+        
+        
+        // The ID of your GCP project
+	    String projectId = "arboreal-height-273317";
+
+	    // The ID of your GCS bucket
+	    String bucketName = "project-sam";
+
+        // The ID of your GCS object
+        // String objectName = "your-object-name";
+        
+        
+
+        if (file.getOwner().equals(email)) {
+
+            try {
+            	Credentials credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/subashkumarsaladi/Desktop/arboreal-height-273317-57289372ded5.json"));
+                Storage storage = StorageOptions.newBuilder().setProjectId(projectId).setCredentials(credentials).build().getService();
+                storage.delete(bucketName, filepath);
+                System.out.println("file controller  GCS delete method done **** ");
+                Files.delete(path);
+
+                userFilesService.deleteUserFilesByFilepath(file.getFilepath());
+                fileService.deleteFile(file.getFilepath());
+
+
+                Userlog userlog = new Userlog();
+
+
+                userlog.setEmail(email);
+                userlog.setFilename(file.getFilename());
+                userlog.setFilepath(filepath);
+                if(file.getIsfile().equals("T"))
+                    userlog.setAction("File Delete");
+
+                else
+                    userlog.setAction("Folder Delete");
+
+                userlog.setActiontime(new Date().toString());
+                userlog.setIsfile(file.getIsfile());
+                userLogService.addUserLog(userlog);
+                
+                
 
             } catch (IOException e) {
                 e.printStackTrace();
