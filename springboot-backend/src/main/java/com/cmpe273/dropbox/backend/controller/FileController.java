@@ -31,6 +31,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 
@@ -42,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 
 @Controller    // This means that this class is a Controller
 @CrossOrigin(origins = "http://localhost:3000")
@@ -141,18 +145,21 @@ public class FileController {
 
             }
             else{
-
-                filepath = UPLOADED_FOLDER + email.split("\\.")[0] + "/" + multipartFile.getOriginalFilename();
+            	//filepath = UPLOADED_FOLDER + email.split("\\.")[0] + "/" + multipartFile.getOriginalFilename();
+                filepath =  email.split("\\.")[0] + "/" + multipartFile.getOriginalFilename();
 
             }
 
+            System.out.println("upload file  " + filepath);
             
+            /** uncomment this if you need to write file in selected folder
             byte[] bytes = multipartFile.getBytes();
             Path path = Paths.get(filepath);
-            Files.write(path, bytes);
-
+            Files.write(path, bytes);**/
+            
 
             newFile.setFilename(multipartFile.getOriginalFilename());
+            System.out.println("upload file  filename " + newFile.getFilename());
             newFile.setFileparent(fileparent);
             newFile.setIsfile("T");
             newFile.setOwner(email);
@@ -177,20 +184,7 @@ public class FileController {
              String fileUrl = blobInfo.getMediaLink();
              newFile.setFilepath(fileUrl);
              System.out.println("Download file  " + fileUrl);
-             //listObjects(projectId,bucketName);
             
-            //response.getOutputStream().println("<p>Thanks for uploading! Here are the list of files you uploaded in Google Cloud Server:</p>");
- 			//response.getOutputStream().println("<p>Download here : </p><a href=\"" + fileUrl + "\">"+fileName+"</a>");
- 				
- 		
- 			 //Bucket bucket = storage.get(bucketName);
-             //Page<Blob> blobs = bucket.list();
-             //response.getOutputStream().println("<table><td>");
-//             for (Blob blob : blobs.iterateAll()) {
-//               System.out.println(blob.getName()+blob.getMediaLink());
-//               response.getOutputStream().println("<p><a href=\"" + blob.getMediaLink() + "\">"+blob.getName()+"</a></p>");
-//               System.out.println(blob.getName());
-//             }
              //response.getOutputStream().println("</td></table>");
              //response.getOutputStream().println("<p>Upload another file <a href=\"http://localhost:8080/IB-PRE\">here</a>.</p>");
          } catch (IOException e) {
@@ -200,7 +194,7 @@ public class FileController {
             //response.getOutputStream().println("<p>Sorry, Your upload to Google Cloud Server failed. Please try again !!</p>");
                 return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
 
-        }
+        } 
      // GCS end
 
         return new ResponseEntity<com.cmpe273.dropbox.backend.entity.Files>(newFile, HttpStatus.OK);
@@ -223,6 +217,30 @@ public class FileController {
         if(email==null){
             return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
         }
+        String projectId = "arboreal-height-273317";
+
+	    // The ID of your GCS bucket
+	    String bucketName = "project-sam";
+	    
+        
+        /**Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+        Bucket bucket = storage.get(bucketName);
+        Page<Blob> blobs = bucket.list();
+
+        for (Blob blob : blobs.iterateAll()) {
+          System.out.println(blob.getName());
+        }**/
+        
+        
+        //Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+        
+        //Page<Blob> blobs = bucket.list();
+
+        //for (Blob blob : blobs.iterateAll()) {
+         // System.out.println(blob.getName());
+        //}
+        
+        
         List<Userfiles> userFilesList = userFilesService.getUserFilesByEmail(email);
 
         List<com.cmpe273.dropbox.backend.entity.Files> filesList = new ArrayList<>();
@@ -304,7 +322,9 @@ public class FileController {
             return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
         }
 
-        String filepath = UPLOADED_FOLDER + file.getOwner().split("\\.")[0] + "/" + file.getFilename();
+        //String filepath = UPLOADED_FOLDER + file.getOwner().split("\\.")[0] + "/" + file.getFilename();
+        //filepath =  email.split("\\.")[0] + "/" + multipartFile.getOriginalFilename();
+        String filepath = email.split("\\.")[0] + "/" + file.getFilename();
         System.out.println("file controller  delete method filepath **** "+filepath);
         Path path = Paths.get(filepath);
         
@@ -326,11 +346,12 @@ public class FileController {
             	Credentials credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/subashkumarsaladi/Desktop/arboreal-height-273317-57289372ded5.json"));
                 Storage storage = StorageOptions.newBuilder().setProjectId(projectId).setCredentials(credentials).build().getService();
                 storage.delete(bucketName, filepath);
+                //returns boolean, based on it, display message to user
                 System.out.println("file controller  GCS delete method done **** ");
-                Files.delete(path);
+                //Files.delete(path);
 
-                userFilesService.deleteUserFilesByFilepath(file.getFilepath());
-                fileService.deleteFile(file.getFilepath());
+                //userFilesService.deleteUserFilesByFilepath(file.getFilepath());
+                //fileService.deleteFile(file.getFilepath());
 
 
                 Userlog userlog = new Userlog();
@@ -432,7 +453,8 @@ public class FileController {
             return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
         }
 
-        String folderpath = UPLOADED_FOLDER + email.split("\\.")[0]+"/"+folderName;
+        //String folderpath = UPLOADED_FOLDER + email.split("\\.")[0]+"/"+folderName;
+        String folderpath =  email.split("\\.")[0]+"/"+folderName;
 
         com.cmpe273.dropbox.backend.entity.Files file= new com.cmpe273.dropbox.backend.entity.Files();
 
@@ -485,7 +507,8 @@ public class FileController {
 
     @GetMapping(path = "/{filename}"/*, produces = MediaType.APPLICATION_JSON_VALUE*/)
     public ResponseEntity<InputStreamResource> downloadFile(@RequestParam String filepath, @PathVariable("filename") String filename) {
-
+System.out.println("download file filepath "+filepath);
+System.out.println("download file filename "+filename);
         File file2Upload = new File(filepath);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
