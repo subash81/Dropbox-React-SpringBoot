@@ -20,8 +20,28 @@ public class Files {
     String starred;
 
     Integer sharedcount;
+    
+    String encryption_key;
+    
+    String encryption_key_sha256;
 
-    public String getStarred() {
+    public String getEncryption_key() {
+		return encryption_key;
+	}
+
+	public void setEncryption_key(String encryption_key) {
+		this.encryption_key = encryption_key;
+	}
+
+	public String getEncryption_key_sha256() {
+		return encryption_key_sha256;
+	}
+
+	public void setEncryption_key_sha256(String encryption_key_sha256) {
+		this.encryption_key_sha256 = encryption_key_sha256;
+	}
+
+	public String getStarred() {
         return starred;
     }
 

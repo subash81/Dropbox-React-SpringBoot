@@ -4,9 +4,11 @@ import com.cmpe273.dropbox.backend.entity.Userfiles;
 import com.cmpe273.dropbox.backend.entity.Userlog;
 import com.cmpe273.dropbox.backend.entity.Users;
 import com.cmpe273.dropbox.backend.service.FileService;
+import com.cmpe273.dropbox.backend.service.StorageFactoryService;
 import com.cmpe273.dropbox.backend.service.UserFilesService;
 import com.cmpe273.dropbox.backend.service.UserLogService;
 import com.cmpe273.dropbox.backend.service.UserService;
+import com.google.api.gax.paging.Page;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Acl;
@@ -18,6 +20,8 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.Acl.Role;
 import com.google.cloud.storage.Acl.User;
 import com.google.gson.Gson;
+import com.cmpe273.dropbox.backend.utils.StorageUtils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +50,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.util.Base64;
+import com.google.api.client.http.InputStreamContent;
+
 
 @Controller    // This means that this class is a Controller
 @CrossOrigin(origins = "http://localhost:3000")
@@ -71,7 +82,7 @@ public class FileController {
 
     @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
     public ResponseEntity<com.cmpe273.dropbox.backend.entity.Files> fileupload(@RequestParam("file") MultipartFile multipartFile,
-                                                                               @RequestParam("fileparent") String fileparent, HttpSession session) throws JSONException {
+                                                                               @RequestParam("fileparent") String fileparent, HttpSession session) throws JSONException, GeneralSecurityException {
 
         String email = (String) session.getAttribute("email");
         System.out.println("subashkumarsaladi controller ****");
@@ -171,20 +182,71 @@ public class FileController {
              //FileInputStream fileInputStream = new FileInputStream("/Users/satyasameeradevu/eclipse-workspace/IB-PRE/target/IB-PRE-0.0.1-SNAPSHOT/uploads/keerthi.txt");
 
              Credentials credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/subashkumarsaladi/Desktop/arboreal-height-273317-57289372ded5.json"));
-             Storage storage = StorageOptions.newBuilder().setProjectId(projectId).setCredentials(credentials).build().getService();
-            
-             BlobInfo blobInfo =
-                 storage.create(
-                     BlobInfo
-                         .newBuilder(bucketName, filepath)
-                         .setAcl(new ArrayList<>(Arrays.asList(Acl.of(User.ofAllUsers(), Role.OWNER))))
-                         .build(),
-                         fileInputStreams);
+				/*// original working file upload before AES encryption
+				 * Storage storage =
+				 * StorageOptions.newBuilder().setProjectId(projectId).setCredentials(
+				 * credentials).build().getService();
+				 * 
+				 * BlobInfo blobInfo = storage.create( BlobInfo .newBuilder(bucketName,
+				 * filepath) .setAcl(new ArrayList<>(Arrays.asList(Acl.of(User.ofAllUsers(),
+				 * Role.OWNER)))) .build(), fileInputStreams);
+				 * 
+				 * String fileUrl = blobInfo.getMediaLink(); newFile.setFilepath(fileUrl);
+				 * System.out.println("Download file  " + fileUrl);
+				 */
+             
+             InputStreamContent mediaContent = new InputStreamContent("text/plain", fileInputStreams);
+             
+             com.google.api.services.storage.Storage storage = StorageFactoryService.getService();
+             
+             com.google.api.services.storage.Storage.Objects.Insert insertObject =
+                 storage.objects().insert(bucketName, null, mediaContent).setName(newFile.getFilename());
+             // The client library's default gzip setting may cause objects to be stored with gzip encoding,
+             // which can be desirable in some circumstances but has some disadvantages as well, such as
+             // making it difficult to read only a certain range of the original object.
+             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 
-             String fileUrl = blobInfo.getMediaLink();
-             newFile.setFilepath(fileUrl);
-             System.out.println("Download file  " + fileUrl);
+
+             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+             keyGen.init(256);
+             SecretKey skey = keyGen.generateKey();
+             String encryption_key = Base64.encodeBase64String(skey.getEncoded());
+             MessageDigest digest = MessageDigest.getInstance("SHA-256");
+             String encryption_key_sha256 = Base64.encodeBase64String(digest.digest(skey.getEncoded()));
+             newFile.setEncryption_key(encryption_key);
+             newFile.setEncryption_key_sha256(encryption_key_sha256);
+
+             // Now set the CSEK headers
+             final  com.google.api.client.http.HttpHeaders httpHeaders = new com.google.api.client.http.HttpHeaders();
+             httpHeaders.set("x-goog-encryption-algorithm", "AES256");
+             httpHeaders.set("x-goog-encryption-key", encryption_key);
+             httpHeaders.set("x-goog-encryption-key-sha256", encryption_key_sha256);
+             
+             insertObject.setRequestHeaders(httpHeaders);
+
+             try {
+               insertObject.execute();
+             } catch (GoogleJsonResponseException e) {
+               System.out.println("Error uploading: " + e.getContent());
+               System.exit(1);
+             }
             
+              fileService.uploadFile(newFile);
+    		  
+    		  Userfiles userfiles = new Userfiles();
+    		  
+    		  userfiles.setEmail(email); userfiles.setFilepath(filepath);
+    		  
+    		  userFilesService.addUserFile(userfiles);
+    		  
+    		  Userlog userlog = new Userlog();
+    		  
+    		  userlog.setAction("File Upload"); userlog.setEmail(email);
+    		  userlog.setFilename(multipartFile.getOriginalFilename());
+    		  userlog.setFilepath(filepath); userlog.setIsfile("F");
+    		  userlog.setActiontime(new Date().toString());
+    		  
+    		  userLogService.addUserLog(userlog);
              //response.getOutputStream().println("</td></table>");
              //response.getOutputStream().println("<p>Upload another file <a href=\"http://localhost:8080/IB-PRE\">here</a>.</p>");
          } catch (IOException e) {
@@ -211,7 +273,7 @@ public class FileController {
     }
 
     @GetMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<com.cmpe273.dropbox.backend.entity.Files>> getUserFiles(HttpSession session) {
+    public ResponseEntity<List<com.cmpe273.dropbox.backend.entity.Files>> getUserFiles(HttpSession session) throws FileNotFoundException, IOException {
 
         String email = (String) session.getAttribute("email");
         if(email==null){
@@ -223,13 +285,17 @@ public class FileController {
 	    String bucketName = "project-sam";
 	    
         
-        /**Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+        //Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+        //Bucket bucket = storage.get(bucketName);
+	    Credentials credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/subashkumarsaladi/Desktop/arboreal-height-273317-57289372ded5.json"));
+        Storage storage = StorageOptions.newBuilder().setProjectId(projectId).setCredentials(credentials).build().getService();
         Bucket bucket = storage.get(bucketName);
         Page<Blob> blobs = bucket.list();
-
+List<String> filesList = new ArrayList<String>();
         for (Blob blob : blobs.iterateAll()) {
           System.out.println(blob.getName());
-        }**/
+              filesList.add(blob.getName());
+        }
         
         
         //Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
@@ -241,15 +307,16 @@ public class FileController {
         //}
         
         
-        List<Userfiles> userFilesList = userFilesService.getUserFilesByEmail(email);
-
-        List<com.cmpe273.dropbox.backend.entity.Files> filesList = new ArrayList<>();
-        for (Userfiles userfiles : userFilesList) {
-
-            com.cmpe273.dropbox.backend.entity.Files file = fileService.getFileByFilepath(userfiles.getFilepath(), "");
-            if(file!=null)
-                filesList.add(file);
-        }
+		/*
+		 * List<Userfiles> userFilesList = userFilesService.getUserFilesByEmail(email);
+		 * 
+		 * List<com.cmpe273.dropbox.backend.entity.Files> filesList = new ArrayList<>();
+		 * for (Userfiles userfiles : userFilesList) {
+		 * 
+		 * com.cmpe273.dropbox.backend.entity.Files file =
+		 * fileService.getFileByFilepath(userfiles.getFilepath(), ""); if(file!=null)
+		 * filesList.add(file); }
+		 */
 
         return new ResponseEntity(filesList, HttpStatus.OK);
     }
@@ -412,34 +479,83 @@ public class FileController {
             return new ResponseEntity(null, HttpStatus.UNAUTHORIZED);
         }
 
-        Userfiles userfiles = new Userfiles();
+		/*// original code for sharefile
+		 * Userfiles userfiles = new Userfiles();
+		 * 
+		 * userfiles.setEmail(shareEmail); userfiles.setFilepath(file.getFilepath());
+		 * 
+		 * userFilesService.addUserFile(userfiles);
+		 * 
+		 * fileService.updateSharedCount(file.getFilepath(), file.getSharedcount() + 1);
+		 * 
+		 * 
+		 * Userlog userlog = new Userlog();
+		 * 
+		 * userlog.setEmail(email); userlog.setFilename(file.getFilename());
+		 * userlog.setFilepath(file.getFilepath()); if(file.getIsfile().equals("T"))
+		 * userlog.setAction("File shared with "+shareEmail);
+		 * 
+		 * else userlog.setAction("Folder shared with "+shareEmail);
+		 * 
+		 * userlog.setActiontime(new Date().toString());
+		 * userlog.setIsfile(file.getIsfile()); userLogService.addUserLog(userlog);
+		 */
+        
+        
+        try {
+   		 String bucketName = "project-sam";		 
+   		com.google.api.services.storage.Storage storage = StorageFactoryService.getService();
 
-        userfiles.setEmail(shareEmail);
-        userfiles.setFilepath(file.getFilepath());
-
-        userFilesService.addUserFile(userfiles);
-
-        fileService.updateSharedCount(file.getFilepath(), file.getSharedcount() + 1);
-
-
-        Userlog userlog = new Userlog();
-
-        userlog.setEmail(email);
-        userlog.setFilename(file.getFilename());
-        userlog.setFilepath(file.getFilepath());
-        if(file.getIsfile().equals("T"))
-            userlog.setAction("File shared with "+shareEmail);
-
-        else
-            userlog.setAction("Folder shared with "+shareEmail);
-
-        userlog.setActiontime(new Date().toString());
-        userlog.setIsfile(file.getIsfile());
-        userLogService.addUserLog(userlog);
+     
+            
+            InputStream objectData =
+                    downloadObject(storage, bucketName, file.getFilename() , file.getEncryption_key(), file.getEncryption_key_sha256());
+                StorageUtils.readStream(objectData,file.getFilename());
+            
+            
+            //response.getOutputStream().println("<p>Thanks for uploading! Here are the list of files you uploaded in Google Cloud Server:</p>");
+   			
+             //response.getOutputStream().println("<p>Upload another file <a href=\"http://localhost:8080/gcs\">here</a>.</p>");
+         } catch (Exception e) {         	 
+             e.printStackTrace();
+             System.out.println("exception in servlet processing ");
+             //response.getOutputStream().println("<p>Sorry, Your upload to Google Cloud Server failed. Please try again !!</p>");
+         }
+   		System.out.println("File downloaded at client successfully");
 
         return new ResponseEntity(null, HttpStatus.OK);
 
     }
+    
+    public static InputStream downloadObject(
+    		com.google.api.services.storage.Storage storage,
+    	      String bucketName,
+    	      String objectName,
+    	      String base64CseKey,
+    	      String base64CseKeyHash)
+    	      throws Exception {
+
+    	    // Set the CSEK headers
+    	    final com.google.api.client.http.HttpHeaders httpHeaders = new com.google.api.client.http.HttpHeaders();
+    	    httpHeaders.set("x-goog-encryption-algorithm", "AES256");
+    	    httpHeaders.set("x-goog-encryption-key", base64CseKey);
+    	    httpHeaders.set("x-goog-encryption-key-sha256", base64CseKeyHash);
+
+    	    com.google.api.services.storage.Storage.Objects.Get getObject = storage.objects().get(bucketName, objectName);
+
+    	    // If you're using AppEngine, turn off setDirectDownloadEnabled:
+    	    //      getObject.getMediaHttpDownloader().setDirectDownloadEnabled(false);
+
+    	    getObject.setRequestHeaders(httpHeaders);
+
+    	    try {
+    	      return getObject.executeMediaAsInputStream();
+    	    } catch (GoogleJsonResponseException e) {
+    	      System.out.println("Error downloading: " + e.getContent());
+    	      System.exit(1);
+    	      return null;
+    	    }
+    	  }
 
     @PostMapping(path = "/makefolder", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<com.cmpe273.dropbox.backend.entity.Files> makeFolder(@RequestBody String data, HttpSession session) throws JSONException, IOException {
