@@ -2,6 +2,7 @@ package com.cmpe273.dropbox.backend.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import java.util.Random;
 
 @Entity
 public class Files {
@@ -24,8 +25,78 @@ public class Files {
     String encryption_key;
     
     String encryption_key_sha256;
+    
+    String fileContent;
+    
+    String p;
 
-    public String getEncryption_key() {
+	String q;
+	
+	String g;
+
+	String n;
+	
+	String lambda;
+
+	String nsquare;
+
+	public String getP() {
+		return p;
+	}
+
+	public void setP(String p) {
+		this.p = p;
+	}
+
+	public String getQ() {
+		return q;
+	}
+
+	public void setQ(String q) {
+		this.q = q;
+	}
+
+	public String getG() {
+		return g;
+	}
+
+	public void setG(String g) {
+		this.g = g;
+	}
+
+	public String getN() {
+		return n;
+	}
+
+	public void setN(String n) {
+		this.n = n;
+	}
+
+	public String getLambda() {
+		return lambda;
+	}
+
+	public void setLambda(String lambda) {
+		this.lambda = lambda;
+	}
+
+	public String getNsquare() {
+		return nsquare;
+	}
+
+	public void setNsquare(String nsquare) {
+		this.nsquare = nsquare;
+	}
+
+	public String getFileContent() {
+		return fileContent;
+	}
+
+	public void setFileContent(String fileContent) {
+		this.fileContent = fileContent;
+	}
+
+	public String getEncryption_key() {
 		return encryption_key;
 	}
 

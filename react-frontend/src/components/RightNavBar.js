@@ -43,22 +43,10 @@ class RightNavBar extends Component {
 console.log(this.props.parentFile)
         return(
         <div className="col-sm-2 sidenav">
-            { this.props.parentFile==""?
-                <button className="btn btn-primary btn-block" type="submit"
-                        onClick={() => this.openSharedFolderModal()}>
-                    New Shared Folder
-                </button>:''
-            }
-                <hr/>
-            <button className="btn btn-primary btn-block" type="submit"
-                    onClick={() => this.openModal()}>
-                New Folder
-            </button>
-
-            <hr/>
+            
             <button className="btn btn-primary btn-block" type="submit"
                     onClick={() => this.props.history.push('/groups')}>
-                Groups
+                Search
             </button>
             <br/>
             <Modal isOpen={this.state.isModalOpen} style={this.style} onClose={() => this.closeModal()}>

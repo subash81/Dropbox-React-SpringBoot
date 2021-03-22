@@ -9,7 +9,7 @@ public class StorageUtils {
   /** Reads the contents of an InputStream and does nothing with it. */
   public static void readStream(InputStream is, String fileName) throws IOException {
 	  
-	  String fn = "/Users/subashkumarsaladi/Downloads/"+fileName;
+	  String fn = "/Users/subashkumarsaladi/Downloads/GCS/"+fileName;
 	  File targetFile = new File(fn);
 	    OutputStream outStream = new FileOutputStream(targetFile);
 

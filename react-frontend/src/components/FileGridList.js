@@ -91,7 +91,6 @@ class FileGridList extends Component {
 
                         <th>Type</th>
                         <th>Name</th>
-                        <th>Members</th>
 
                     </tr>
                     </thead>
@@ -149,31 +148,23 @@ class FileGridList extends Component {
                                         }
 
                                     </td>
+                                    
+
+                                    
                                     <td>
-                                        {file.sharedcount===0?
-                                            <div>Only You</div>:
-                                        <div className="row justify-content-md-left">
-                                            <div className="col-md-1">{file.sharedcount}</div>
-                                            <div>members</div>
-                                        </div>
-                                            }
+                                        <button className="btn btn-primary" type="submit"
+                                                //onClick={() => this.openModal(index, file, downloadlink)}>
+                                                onClick={() => this.props.sharefile(file)}>
+                                            Download
+                                        </button>
 
                                     </td>
-
-                                    <td>
+									<td>
                                         <button className="btn btn-primary" type="submit"
                                                 onClick={() => this.props.deleteFile(index, file)}>
                                             Delete
                                         </button>
                                     </td>
-                                    <td>
-                                        <button className="btn btn-primary" type="submit"
-                                                onClick={() => this.openModal(index, file, downloadlink)}>
-                                            Share
-                                        </button>
-
-                                    </td>
-
                                 </tr>
                             );
                      //   }

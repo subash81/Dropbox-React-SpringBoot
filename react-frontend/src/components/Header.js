@@ -44,14 +44,14 @@ class Header extends Component {
                         <ul className="nav navbar-nav">
                             <div className="row">
 
-                                <li className="active">Welcome <a href="#" onClick={() => this.props.history.push("/userdetails")}>
+                                <li className="active">Welcome <a href="#" style={{color: "#00a5a6"}} onClick={() => this.props.history.push("/userdetails")}>
                                      {localStorage.getItem("email").split('@')[0]}</a>,</li>
                                 <div className="col-md-1" ></div>
-                                <li className="active"><a href="#" onClick={() => this.home()}>
+                                <li className="active"><a href="#" style={{color: "#00a5a6"}} onClick={() => this.home()}>
                                     Home</a></li>
 
                                 <div className="col-md-1" ></div>
-                                <li className="active"><a href="#" onClick={() => this.logout()}>
+                                <li className="active"><a href="#" style={{color: "#00a5a6"}} onClick={() => this.logout()}>
                                 Logout</a></li>
                             </div>
                         </ul>

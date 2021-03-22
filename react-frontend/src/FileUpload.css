@@ -28,3 +28,13 @@ footer {
     }
     .row.content {height:auto;}
 }
+
+.btn-primary {
+    color: #fff;
+    background-color: #00a5a6;
+    border-color: #00a5a6;
+}
+
+.link-title {
+	color: #00a5a6;
+}

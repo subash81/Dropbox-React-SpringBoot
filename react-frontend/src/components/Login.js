@@ -43,9 +43,9 @@ class Login extends Component {
                 </button>
                 <br/>
 
-                <a href="" className="pull-right need-help"
+                <a href="" className="pull-right need-help link-title"
                 >Need help? </a><span className="clearfix"></span>
-                <a href="#" className="text-center new-account" onClick={() => this.props.loginOrSignup("SU")}>Create New User</a>
+                <a href="#" className="text-center new-account link-title" onClick={() => this.props.loginOrSignup("SU")}>Create New User</a>
 
 
             </div>

@@ -153,12 +153,12 @@ console.log(folder);
             message: ''
         });
 
-        var emailList=filedata.shareEmail.trim().split(';');
+        //var emailList=filedata.shareEmail.trim().split(';');
 
 
-        for (var key in emailList) {
+        //for (var key in emailList) {
 
-            const data = {filedata: filedata.file, shareEmail: emailList[key]}
+            const data = {filedata: filedata}
 
             API.shareFile(data)
                 .then((res) => {
@@ -170,7 +170,7 @@ console.log('dataaa..',data);
                         this.props.sharedCount(filedata.index, data.filedata.sharedcount+1);
                         this.setState({
 
-                            message: this.state.message+" File Shared with "+data.shareEmail+"!"
+                            message: this.state.message+" File Downloaded Successfully!"
                         });
                         console.log("Success...")
 
@@ -178,11 +178,11 @@ console.log('dataaa..',data);
 
                         this.setState({
 
-                            message: this.state.message+" "+data.shareEmail+" does not exist!"
+                            message: this.state.message+" Error in file download. Please try later !"
                         });
                     }
                 });
-        }
+       // }
 
 
 
@@ -368,7 +368,7 @@ console.log(filedata)
                     <div className="row">
 
                         <div className="col-sm-7 ">
-                            <a href="#" className="link-title "
+                            <a href="#"  className="link-title "
                                onClick={() => this.navigateHome()}>
                                 CloudLock
                             </a>

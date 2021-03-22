@@ -56,7 +56,7 @@ class SignUp extends Component {
                         onClick={() => this.props.signUp(this.state)}>
                     Save
                 </button>
-                    <a href="#" className="text-center new-account" onClick={() => this.props.loginOrSignup("SI")}>Log In </a>
+                    <a href="#" className="text-center new-account link-title" onClick={() => this.props.loginOrSignup("SI")}>Log In </a>
 
             </div>
 
